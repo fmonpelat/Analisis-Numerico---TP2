@@ -31,23 +31,46 @@ from pprint import pprint
 
 ## NOTA: debemos calcular la superficie Hc y demas ya que debe ser versatil! lo dice el TP
 
-# EDO (no se si es correcta; la variable y seria T)
-def f(x,y): 
-    return -0.00040653*(y-650)
+# EDO 
+def f(t,y): 
 
-#EDO respuesta analitica (nose si esta bien)
-def g(x):
-    return 650*(20-650)*math.exp(-0.00040653*x)
+    T1 = 923.15 # temperatura final del material
+    rho = 7850 # rho del material
+    OD = 0.2448 # metros 
+    WT = 0.01384 # metros
+    Lt = 12 # metros
+    Hc= 20 # Constante de transferencia del calor
+    C= 480 # Constante calorimetrica del material
+
+    S = math.pi*OD*Lt # Superficie del material
+    m =  rho*math.pi*OD*WT*(1-WT/OD)*Lt # Masa del material
+    return -((Hc*S)/(m*C))*(t-T1)
+
+#EDO respuesta analitica (para comparar)
+def g(t):
+    T0 = 293.15 # temperatura inicial del material
+    T1 = 923.15 # temperatura final del material
+    rho = 7850 # rho del material
+    OD = 0.2448 # metros 
+    WT = 0.01384 # metros
+    Lt = 12 # metros
+    Hc= 20 # Constante de transferencia del calor
+    C= 480 # Constante calorimetrica del material
+
+    S = math.pi*OD*Lt # Superficie del material
+    m =  rho*math.pi*OD*WT*(1-WT/OD)*Lt # Masa del material
+    return (T0-T1)*math.exp(-((Hc*S)/(m*C))*t)+T1
 
 def main():
-    #para probar buscamos runge kutta de orden 4 para la funcion x+y
+    #para probar buscamos runge kutta de orden 4 para la funcion f
     printdata=[]
     x0=0
-    y0=20
-    # y(5)? con paso de h=0.5
-    val=650
-    h=28
-    x, y = rungeKutta(f,h,x0,y0,val,printdata)
+    T0=293.15 # temperatura inicial 
+
+    T1 = 923.15 # temperatura final
+    h = 28 # cadencia
+
+    x, y = rungeKutta(f,h,x0,T0,T1,printdata)
     print_data(printdata)
     GraficarDiferencia(printdata)
 
@@ -55,6 +78,10 @@ def main():
 
 def rungeKutta(f,h,x0,y0,val,data):
     debug = 1
+    aux_dict={
+        'X':x0,
+        'Y':y0,
+    }
     # K1 = F(Xn,Yn)
     # K2 = F( Xn + h/2 , Yn + h*K1 /2 )
     # K3 = F( Xn + h/2 , Yn + h*K2 /2 )
@@ -67,10 +94,6 @@ def rungeKutta(f,h,x0,y0,val,data):
     # Yn+1 = Yn + h/6( K1 + 2K2 + 2K3 + K4 )
     y = y0 + (h/6)*(k1 + 2*k2 + 2*k3 + k4)
 
-    aux_dict={
-        'X':x,
-        'Y':y,
-    }
 
     if(x0 > val):
         if (debug==1): print('encontramos el valor!')
@@ -86,15 +109,14 @@ def GraficarDiferencia(data):
     # TODO hay que ajustar estos valores de linspace ya que el gráfico es logaritmico
     datax = []
     datay = []
+    xx = np.linspace(0, 1000, 50)
     yy=[]
-    xx = np.linspace(0, 100, 100)
     for i in range(len(xx)):
         yy.append(g(xx[i]))
 
     for i in range(len(data)):
       datax.append(data[i]['X'])
       datay.append(data[i]['Y'])
-    pprint(yy)
 
     trace0 = go.Scatter(
                         x=datax,
@@ -109,7 +131,7 @@ def GraficarDiferencia(data):
                         mode = 'lines+markers',
     )
     
-    layout = dict(title = 'Gráfica de Runge-Kutta',
+    layout = dict(title = 'Gráfica de Metodo Runge-Kutta',
                 xaxis = dict(title = 'X '),
                 yaxis = dict(title = 'Y ',
                              autorange=True),
