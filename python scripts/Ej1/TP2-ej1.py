@@ -51,13 +51,7 @@ def T_inf(x):
     else:
         return T2
 
-
 # definición de la EDO en forma dT/dt = f(t,T)
-
-def edo(t,T):
-    x = t * v_0 #aproximacion continua, se mueve de a pasitos en realidad
-    return (-1 / (m*C) * ( Hc * S * (T - T_inf(x)) + sigma * eps * S * (T**4 - T_inf(x)**4) ) )
-
 def f(t,T): 
     x = t * v_0 #aproximacion continua, se mueve de a pasitos en realidad
     return (-((Hc*S)/(m*C))*(T-T_inf(x)))
@@ -68,39 +62,50 @@ def analiticS(t):
 
 
 def main():
-    #para probar buscamos runge kutta de orden 4 para la funcion f
+    # Declaramos los arrays de datos
     data_rk=[]
     data_euler=[]
+    data_analitic=[]
 
     x0 = 0. #tiempo inicial
     xf = n_bol * cad #tiempo final
     h = cad
     i=0
-
-    #x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
-    #print('Metodo de Runge Kutta\n')
-    #print_data(data_rk)
+    
+    x_rk, y_rk = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
     x_euler, y_euler = euler(f,analiticS,h,x0,xf,T0,data_euler)
-    print("Metodo de Euler\n")
-    print_data(data_euler)
-    #Graficar(data_rk,data_euler)
-    #GraficarError(data_rk,data_euler)
+
+    # Para ver por terminal los datos
+    # print('Metodo de Runge Kutta\n')
+    # print_data(data_rk)
+    # print("Metodo de Euler\n")
+    # print_data(data_euler)
+    
+    cargaAnalitic(h,data_rk[-1]['i'],data_analitic)
+    # Graficamos los datos (Punto A)
+    Graficar(data_rk,data_euler,data_analitic)
+    # Graficamos el error para ambos metodos (Punto B)
+    GraficarError(data_rk,data_euler)
 
 
 
-# Función euler(f,x0,y0,xf,h,data)
-# f : funcion EDO => dT/dt = f
-# x0 y y0 : valores iniciales para euler
-# xf: valor final en x
-# h: incremento de euler
-# data: array de diccionario que contiene la tupla X e Y de cada iteracion
+#----------------------------------------------------------
+# FUNCION euler(f,g,h,x0,xf,y0,data):
+#
+# PARAMETROS
+# f:       Datos generados de la funcion rungeKutta()
+# g:       Datos generados de la funcion euler()
+# h:       Incremento o cadencia
+# x0 y y0: Valores iniciales para RK
+# xf :     Valor final para RK
+# data :   Array de diccionarios que contiene los datos X e Y de cada iteracion
+# USO      Calcula los valores con el metodo de Euler
+#-----------------------------------------------------------
 def euler(f,g,h,x0,xf,y0,data):
     t = x0
     y = y0
+    i=0
     while t <= xf:
-        y0=y
-        t += h
-        y += h * f(t,y)
         delta = abs( y-g(t) )/g(t)
         aux_dict={
         'i':i,
@@ -109,21 +114,28 @@ def euler(f,g,h,x0,xf,y0,data):
         'E':delta,
         }
         data.append(aux_dict)
+        i=i+1
+        y += h * f(t,y)
+        t += h
     return data[-1]['X'],data[-1]['Y']
 
 
 
-# Función rungeKutta(f,h,x0,y0,val,data,i)
-# f : funcion EDO => dT/dt = f
-# g : funcion analitica para el calculo del error
-# x0 y y0: valores iniciales para RK
-# xf : valore final para RK
-# n_steps: cantidad de pasos al cual dividir la resta de xf y x0
-# data : array de diccionarios que contiene la tupla X e Y de cada iteracion
-# i : contador de iteraciones 
-
+#----------------------------------------------------------
+# FUNCION rungeKutta(f,g,h,x0,xf,y0,data,i)
+#
+# PARAMETROS
+# f:       Datos generados de la funcion rungeKutta()
+# g:       Datos generados de la funcion euler()
+# h:       Incremento o cadencia
+# x0 y y0: Valores iniciales para RK
+# xf :     Valor final para RK
+# data :   Array de diccionarios que contiene los datos X e Y de cada iteracion
+# i :      Contador de iteraciones 
+# USO      Calcula los valores con el metodo de Runge-Kutta
+#-----------------------------------------------------------
 def rungeKutta(f,g,h,x0,xf,y0,data,i):
-    debug = 1
+    debug = 0
     # K1 = F(Xn,Yn)
     # K2 = F( Xn + h/2 , Yn + h*K1 /2 )
     # K3 = F( Xn + h/2 , Yn + h*K2 /2 )
@@ -134,8 +146,8 @@ def rungeKutta(f,g,h,x0,xf,y0,data,i):
     k4 = f(x0 + h, y0 + h*k3)
     # Yn+1 = Yn + h/6( K1 + 2K2 + 2K3 + K4 )
     y = y0 + (h/6)*(k1 + 2*k2 + 2*k3 + k4)
-    delta = abs( y-g(x0) )/g(x0)
-
+    delta = abs( y0-g(x0) )/g(x0)
+    if debug: print ('dif('+str(y)+'-'+str(g(x0))+' )= '+str(delta)+'\n')
     aux_dict={
         'i':i,
         'X':x0,
@@ -143,21 +155,48 @@ def rungeKutta(f,g,h,x0,xf,y0,data,i):
         'E':delta,
     }
     if debug: pprint(aux_dict)
-
+    data.append(aux_dict)
     if( round(x0) == xf ):
-        if debug: print('X final: ' + str(data[-1]['X']) + '/ Y final: '+str(data[-1]['Y']) ) 
+        if debug: print('X final: ' + str(data[-1]['X']) + ' -  Y final: '+str(data[-1]['Y']) ) 
         return data[-1]['X'],data[-1]['Y']
     else:
-        data.append(aux_dict)
-        return rungeKutta( f, g, h, x0+h, xf, y, data, i)
+        return rungeKutta( f, g, h, x0+h, xf, y, data, i+1)
 
 
+#----------------------------------------------------------
+# FUNCION cargaAnalitic(h,nCant,data)
+#
+# PARAMETROS
+# h:      Intervalo de incremento de X
+# nCant:  Cantidad de iteraciones en incrementos de h
+# data:   Array de diccionarios con datos de X, Y y las iteraciones realizadas
+# USO     Inicializa el array de datos con la funcion analitica para luego graficar 
+#         con incrementos de h nCant de veces
+#-----------------------------------------------------------
+def cargaAnalitic(h,nCant,data):
+   for i in range(nCant+1):
+       aux_dict={
+           'i':i,
+           'X':i*h,
+           'Y':analiticS(i*h),
+       }
+       data.append(aux_dict)
+   return data[-1]['X'],data[-1]['Y']
+
+#----------------------------------------------------------
+# FUNCION GraficarError(data_rk,data2_euler)
+#
+# PARAMETROS
+# data_rk:      Datos generados de la funcion rungeKutta()
+# data2_euler:  Datos generados de la funcion euler()
+# USO           Imprime un gráfico con Plotly el error relativo porcentual de los datos
+#               del metodo de runge kutta y del metodo de euler. 
+#-----------------------------------------------------------
 def GraficarError(data_rk,data2_euler):
     datax1 = []
     datay1 = []
     datax2 = []
     datay2 = []
-    kelvin_conversion=273
     minutes_conversion=60
 
     for i in range(len(data_rk)):
@@ -195,17 +234,20 @@ def GraficarError(data_rk,data2_euler):
 # FUNCION Graficar(data,data2)
 #
 # PARAMETROS
-# data: 
-# data2: 
+# data:  Datos generados de la funcion rungeKutta()
+# data2: Datos generados de la funcion euler()
+# data3: Datos de 
 # USO    Imprime con Plotly un gráfico con 2 datos y uno que se 
 #        hace con la solucion analitica.
 #-----------------------------------------------------------
-def Graficar(data,data2):
+def Graficar(data,data2,data3):
     # data1,data2 son arrays de diccionarios
     datax1 = []
     datay1 = []
     datax2 = []
     datay2 = []
+    datax3 = []
+    datay3 = []
 
     # transformamos de segundos a minutos para graficar en X y en el eje Y 
     # pasamos de kelvin a grados centigrados
@@ -213,20 +255,16 @@ def Graficar(data,data2):
     # en Y restamos 273 para pasarlo a centigrados 
     kelvin_conversion=273
     minutes_conversion=60
-    xx = np.linspace(0, data[-1]['X'], 50)
-    yy=[]
-   
-    for i in range(len(xx)):
-        yy.append(g(xx[i]))
-    for i in range(len(xx)):
-        xx[i]=xx[i]/minutes_conversion
-        yy[i]=yy[i]-kelvin_conversion
+
     for i in range(len(data)):
         datax1.append(data[i]['X']/minutes_conversion)
         datay1.append(data[i]['Y']-kelvin_conversion)
     for i in range(len(data2)):
         datax2.append(data2[i]['X']/minutes_conversion)
         datay2.append(data2[i]['Y']-kelvin_conversion)
+    for i in range(len(data3)):
+        datax3.append(data3[i]['X']/minutes_conversion)
+        datay3.append(data3[i]['Y']-kelvin_conversion)
 
     trace0 = go.Scatter(
                         x=datax1,
@@ -241,16 +279,17 @@ def Graficar(data,data2):
                         mode = 'lines+markers',
     )
     trace2 = go.Scatter(
-                        x=xx,
-                        y=yy,
+                        x=datax3,
+                        y=datay3,
                         name = 'Datos de gráfica analitica',
                         mode = 'lines+markers',
     )
     
-    layout = dict(title = 'Gráfica comparación',
+    layout = go.Layout(title = 'Gráfica comparación',
                 xaxis = dict(title = 'X (Minutos) '),
                 yaxis = dict(title = 'Y (Grados Centigrados)',
-                             autorange=True),
+                             autorange=True,
+                             hoverformat = '.10f'),
                 )
     data = [trace0,trace1,trace2]
     #la figura es un array de data(traces) y el layout (que tambien es un array)
@@ -270,62 +309,10 @@ def print_data(data):
     kelvin_conversion=273
     minutes_conversion=60
 
-    print ('iteracion={0:.2f},X={1:.5f},Y={2:.10f},exact={3:.10f},error(%)={4:.10f}'.format(i,data[i]['X']/minutes_conversion,data[i]['Y']-kelvin_conversion,exact-kelvin_conversion,data[i]['E']*100))
+    for i in range(len(data)):
+        exact = analiticS(data[i]['X'])
+        print ('iteracion={0:.2f},X={1:.5f},Y={2:.10f},exact={3:.10f},error(%)={4:.10f}'.format(i,data[i]['X'],data[i]['Y']-kelvin_conversion,exact-kelvin_conversion,data[i]['E']*100))
     return
-
-
-
-#----------------------------------------------------------
-# FUNCION PrintTabLatex()
-#
-# PARAMETROS
-# aTitulos: Lista con los títulos a imprimir
-# aDatos: 	Lista de listas con los datos correspondientes 
-# 		  	a cada titulo
-# USO  		Imprime una tabla en formato latex para facilidad 
-# 			del pasaje de datos al informe
-#-----------------------------------------------------------
-def PrintTabLatex(aTitulos,aDatos):
-
-	cCPypeC = "|"
-	aTab	= [] 
-	cLin	= ""
-	cTit	= ""
-	cIni	= "\hline "
-	cFin	= " \\\\"
-
-	for nj in range(len(aTitulos)):
-		if nj < len(aTitulos)-1:
-			cTit = cTit + aTitulos[nj]+ " & "
-		if nj == len(aTitulos)-1:
-			cTit = cTit + aTitulos[nj]
-
-	cTit = cIni + cTit + cFin
-	for ni in range(len(aDatos)):
-		cCPypeC=cCPypeC+"c|"
-		cLin = ""
-		for nj in range(len(aDatos[ni])):
-			if nj < len(aDatos[ni])-1:
-				cLin = cLin + aDatos[ni][nj]+ " & "
-			if nj == len(aDatos[ni])-1:
-				cLin = cLin + aDatos[ni][nj]
-
-		cLin = cIni + cLin + cFin 
-		aTab.append(cLin)
-
-
-	print("\\begin{table}[H]")
-	print("		\makegapedcells")
-	print("		\centering")
-	print("\\resizebox{0.7\\textwidth}{!}{")
-	print("			\\begin{tabular}{"+cCPypeC+"}")
-	print(cTit)
-	for ni in range(len(aTab)):
-		print(aTab[ni])
-	print("			\hline")
-	print("		\end{tabular}}")
-	print("\end{table}")
-	return
 
 if(__name__ == "__main__"):
     main()
