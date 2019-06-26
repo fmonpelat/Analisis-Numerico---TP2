@@ -219,7 +219,7 @@ def GraficarError(data_rk,data2_euler):
                         name = 'Error relativo porcentual Euler',
                         mode = 'lines+markers',
     )
-    layout = dict(title = 'Gráfica comparación del Error porcentual',
+    layout = dict(title = 'Error porcentual por método',
                 xaxis = dict(title = 'X (Minutos) '),
                 yaxis = dict(title = 'Y (Error %)',
                              autorange=True),
@@ -281,11 +281,11 @@ def Graficar(data,data2,data3):
     trace2 = go.Scatter(
                         x=datax3,
                         y=datay3,
-                        name = 'Datos de gráfica analitica',
+                        name = 'Datos de la función analitica',
                         mode = 'lines+markers',
     )
     
-    layout = go.Layout(title = 'Gráfica comparación',
+    layout = go.Layout(title = 'Gráfica comparativa',
                 xaxis = dict(title = 'X (Minutos) '),
                 yaxis = dict(title = 'Y (Grados Centigrados)',
                              autorange=True,
