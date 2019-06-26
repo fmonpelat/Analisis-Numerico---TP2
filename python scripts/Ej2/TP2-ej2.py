@@ -3,7 +3,7 @@ TP2 ANALISIS NUMERICO
 Rocío Gallo
 Facundo Monpelat
 Metodo de Runge Kutta orden 4
-Ejercicio 1
+Ejercicio 2
 """
 
 import numpy as np #Manejo de arrays
