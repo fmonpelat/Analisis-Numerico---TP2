@@ -32,7 +32,7 @@ sigma   = 5.6703e-8 #W/(m**2 * K**4)
 eps     = 0.85 #
 L       = 50 #m
 n_bol   = 50 #unidades o pasos
-cad     = (np.round(-10 / 10000 * (97490-90000) + 35, 0))*0.95
+cad     = (np.round(-10 / 10000 * (97490-90000) + 35, 0))
 v_0     = L / (n_bol * cad) #m/s
 S       = math.pi*OD*Lt # Superficie del material
 m       = rho*math.pi*OD*WT*(1-WT/OD)*Lt # Masa del material
@@ -80,6 +80,7 @@ def main():
     T_Sk_obj = 602 #C
     print('Sk Objetivo [seg] : '+str(Sk_obj))
     print('Tsk Objetivo [C] = ' +str(T_Sk_obj))
+
     T1 = 1003 # temperatura T1 del material
     T2 = 922.5 # temperatura T2 del material
     SoakingTime10(T1,T2,Sk_obj,T_Sk_obj)
@@ -106,13 +107,6 @@ def SoakingTime10(T_1,T_2,Sk_obj,T_Sk_obj):
     dictSoak = paramSoaking(data_rk)
     print('tiempo Sk: {0:.3f} [min] tiempo obj: {1:.3f} [min] temp mean: {2:.3f} [C] temp obj: {3:.2f} [C]'.format(
         dictSoak['Sk']/minutes_conversion,Sk_obj,dictSoak['Tsk']-kelvin_conversion,T_Sk_obj)) 
-    """
-    while round(dictSoak['Sk']/minutes_conversion) <= 10 and T1 >= 0: 
-        x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
-        dictSoak = paramSoaking(data_rk)
-        pprint(dictSoak['Sk'])
-        pprint(T1)
-    """
     return
 
 
