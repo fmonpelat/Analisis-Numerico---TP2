@@ -20,8 +20,8 @@ import plotly.graph_objs as go
 from pprint import pprint
 
 T0      = 293.15 # temperatura inicial 
-T1      = 923.15 # temperatura T1 del material
-T2      = 923.15 # temperatura T2 del material
+T1      = 983.15 # temperatura T1 del material
+T2      = 983.15 # temperatura T2 del material
 rho     = 7850 # rho del material
 OD      = 0.2448 # metros 
 WT      = 0.01384 # metros
@@ -73,8 +73,8 @@ def main():
     x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
     cargaAnalitic(28,data_rk[-1]['i'],data_an)
     #print_data(data_rk)
-    Graficar(data_rk,data_an)
-    paramSal(data_rk)
+    #Graficar(data_rk,data_an)
+    paramSoaking(data_rk)
 
     return
 
@@ -270,15 +270,21 @@ def PrintTabLatex(aTitulos,aDatos):
 	print("\end{table}")
 	return
 
+
+
 #----------------------------------------------------------
-# FUNCION paramSal(datos)
+# FUNCION paramSoaking(datos)
 #
 # PARAMETROS
 # datos:  Lista de diccionarios con los datos de la función rungeKutta()
 # USO  	  Imprime los datos de soaking y tiempos de soaking
 #-----------------------------------------------------------
-def paramSal(datos):
+def paramSoaking(datos):
 
+    debug = 0
+    kelvin_conversion = 273
+    minutes_conversion = 60
+    SoakingTemp = 10 # temp de diferencia soaking en grados
     Tfin = datos[-1]['Y']
     tfin = datos[-1]['X']
     sumT = 0
@@ -288,7 +294,7 @@ def paramSal(datos):
 
     #recorro T(t) de forma decreciente
     for i in range(len(datos)-1,0,-1):
-        
+        if debug: print('i= '+str(i)+' y: '+str(datos[i]['Y'])+' incrementoProm: '+str(nInc)+' tiempoIni: '+str(datos[i]['X']) )
         #Incrementos
         sumT = sumT + datos[i]['Y']
         nInc = nInc + 1
@@ -297,16 +303,17 @@ def paramSal(datos):
         Tini = datos[i]['Y']
         tini = datos[i]['X']
 
-        if Tfin-Tini < 10:
+        if Tfin-Tini < SoakingTemp:
             continue
         else:
             Sk = tfin-tini
+            break
     Tsk = sumT/nInc
 
     print("Tsk(K):  "+ str(Tsk) +" K")
-    print("Tsk(C):  "+ str(Tsk-273.15)+" C")
+    print("Tsk(C):  "+ str(Tsk-kelvin_conversion)+" C")
     print("Sk(seg):  "+ str(Sk) +" seg")
-    print("Sk(min):  "+ str(Sk/60) +" min")
+    print("Sk(min):  "+ str(Sk/minutes_conversion) +" min")
 
     return {"Tsk":Tsk,"Sk":Sk}
 
