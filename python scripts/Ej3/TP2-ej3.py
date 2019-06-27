@@ -32,7 +32,7 @@ sigma   = 5.6703e-8 #W/(m**2 * K**4)
 eps     = 0.85 #
 L       = 50 #m
 n_bol   = 50 #unidades o pasos
-cad     = np.round(-10 / 10000 * (97490-90000) + 35, 0)
+cad     = (np.round(-10 / 10000 * (97490-90000) + 35, 0))*0.95
 v_0     = L / (n_bol * cad) #m/s
 S       = math.pi*OD*Lt # Superficie del material
 m       = rho*math.pi*OD*WT*(1-WT/OD)*Lt # Masa del material
@@ -72,19 +72,27 @@ def main():
 
     
     x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
-    # print_data(data_rk)
+    #print_data(data_rk)
     GraficarSoaking(data_rk)
     # paramSoaking(data_rk)
 
     Sk_obj = 10 #minutos
     T_Sk_obj = 602 #C
-    SoakingTime10(Sk_obj,T_Sk_obj)
+    print('Sk Objetivo [seg] : '+str(Sk_obj))
+    print('Tsk Objetivo [C] = ' +str(T_Sk_obj))
+    T1 = 1003 # temperatura T1 del material
+    T2 = 922.5 # temperatura T2 del material
+    SoakingTime10(T1,T2,Sk_obj,T_Sk_obj)
     return
 
 
-def SoakingTime10(Sk_obj,T_Sk_obj):
+def SoakingTime10(T_1,T_2,Sk_obj,T_Sk_obj):
     #T1      = 983.15 # temperatura T1 del material
     #T2      = 983.15 # temperatura T2 del material
+    global T1
+    T1=T_1
+    global T2
+    T2 = T_2
     minutes_conversion = 60
     kelvin_conversion = 273.15
     x0 = 0. #tiempo inicial
