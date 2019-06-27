@@ -222,6 +222,7 @@ def GraficarError(data_rk,data2_euler):
     layout = dict(title = 'Error porcentual por método',
                 xaxis = dict(title = 'X (Minutos) '),
                 yaxis = dict(title = 'Y (Error %)',
+                             #type='log',
                              autorange=True),
                 )
     data = [trace0,trace1]
