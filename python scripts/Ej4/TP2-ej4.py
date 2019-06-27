@@ -64,16 +64,18 @@ def main():
     #para probar buscamos runge kutta de orden 4 para la funcion f
     data_rk=[]
     data_an=[]
-
+    
+    global cad
     x0 = 0. #tiempo inicial
     xf = n_bol * cad #tiempo final
     h = cad
+    cad = cad*0.95
     i=0
 
     
     x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
     #print_data(data_rk)
-    GraficarSoaking(data_rk)
+    #GraficarSoaking(data_rk)
     # paramSoaking(data_rk)
 
     Sk_obj = 10 #minutos
