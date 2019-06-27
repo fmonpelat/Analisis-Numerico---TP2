@@ -247,7 +247,7 @@ def GraficarSoaking(data):
                                 },
                             },
                 ],
-                title = 'Gráfica comparación',
+                title = 'Gráfica',
                 xaxis = dict(title = 'X (Minutos) '),
                 yaxis = dict(title = 'Y (Grados Centigrados)',
                              autorange=True),
