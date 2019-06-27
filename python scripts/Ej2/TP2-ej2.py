@@ -60,20 +60,6 @@ def analiticS(t):
     return (T0-T1)*math.exp(-((Hc*S)/(m*C))*t)+T1
 
 
-def cargaAnalitic(h,nCant,data):
-
-    for i in range(nCant+1):
-
-        aux_dict={
-            'i':i,
-            'X':i*h,
-            'Y':analiticS(i*h),
-        }
-        data.append(aux_dict)
-
-    return data[-1]['X'],data[-1]['Y']
-
-
 def main():
     #para probar buscamos runge kutta de orden 4 para la funcion f
     data_rk=[]
@@ -86,23 +72,28 @@ def main():
 
     x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
     cargaAnalitic(28,data_rk[-1]['i'],data_an)
-    print_data(data_rk)
+    #print_data(data_rk)
     Graficar(data_rk,data_an)
     paramSal(data_rk)
 
     return
 
-# Función rungeKutta(f,h,x0,y0,val,data,i)
-# f : funcion EDO => dT/dt = f
-# g : funcion analitica para el calculo del error
-# x0 y y0: valores iniciales para RK
-# xf : valore final para RK
-# n_steps: cantidad de pasos al cual dividir la resta de xf y x0
-# data : array de diccionarios que contiene la tupla X e Y de cada iteracion
-# i : contador de iteraciones 
+#----------------------------------------------------------
+# FUNCION rungeKutta(f,g,h,x0,xf,y0,data,i)
+#
+# PARAMETROS
+# f:       Datos generados de la funcion rungeKutta()
+# g:       Datos generados de la funcion euler()
+# h:       Incremento o cadencia
+# x0 y y0: Valores iniciales para RK
+# xf :     Valor final para RK
+# data :   Array de diccionarios que contiene los datos X e Y de cada iteracion
+# i :      Contador de iteraciones 
+# USO      Calcula los valores con el metodo de Runge-Kutta
+#-----------------------------------------------------------
 
 def rungeKutta(f,g,h,x0,xf,y0,data,i):
-    debug = 1
+    debug = 0
     # K1 = F(Xn,Yn)
     # K2 = F( Xn + h/2 , Yn + h*K1 /2 )
     # K3 = F( Xn + h/2 , Yn + h*K2 /2 )
@@ -135,13 +126,35 @@ def rungeKutta(f,g,h,x0,xf,y0,data,i):
         return rungeKutta( f, g, h, x0+h, xf, y, data, i+1)
 
 #----------------------------------------------------------
+# FUNCION cargaAnalitic(h,nCant,data)
+#
+# PARAMETROS
+# h:      Intervalo de incremento de X
+# nCant:  Cantidad de iteraciones en incrementos de h
+# data:   Array de diccionarios con datos de X, Y y las iteraciones realizadas
+# USO     Inicializa el array de datos con la funcion analitica para luego graficar 
+#         con incrementos de h nCant de veces
+#-----------------------------------------------------------
+def cargaAnalitic(h,nCant,data):
+
+    for i in range(nCant+1):
+
+        aux_dict={
+            'i':i,
+            'X':i*h,
+            'Y':analiticS(i*h),
+        }
+        data.append(aux_dict)
+
+    return data[-1]['X'],data[-1]['Y']
+
+#----------------------------------------------------------
 # FUNCION Graficar(data,data2)
 #
 # PARAMETROS
-# data: 
-# data2: 
-# USO    Imprime con Plotly un gráfico con 2 datos y uno que se 
-#        hace con la solucion analitica.
+# data:  Datos generados de la funcion rungeKutta()
+# data2: Datos generados de la funcion cargaAnalitic()
+# USO    Imprime con Plotly un gráfico con 2 datos
 #-----------------------------------------------------------
 def Graficar(data,data2):
     # data1,data2 son arrays de diccionarios
@@ -188,54 +201,6 @@ def Graficar(data,data2):
     plotly.offline.plot(fig, auto_open=True)
     return
 
-
-#----------------------------------------------------------
-# FUNCION Graficar(data,data2)
-#
-# PARAMETROS
-# data: 
-# data2: 
-# USO    Imprime con Plotly un gráfico con 2 datos y uno que se 
-#        hace con la solucion analitica.
-#-----------------------------------------------------------
-'''
-
-def Graficar(data):
-    # data1,data2 son arrays de diccionarios
-    datax1 = []
-    datay1 = []
-    datax2 = []
-    datay2 = []
-
-    # transformamos de segundos a minutos para graficar en X y en el eje Y 
-    # pasamos de kelvin a grados centigrados
-    # en X dividimos por 60 para minutos
-    # en Y restamos 273 para pasarlo a centigrados 
-    kelvin_conversion=273
-    minutes_conversion=60
-
-    for i in range(len(data)):
-        datax1.append(data[i]['X']/minutes_conversion)
-        datay1.append(data[i]['Y']-kelvin_conversion)
-
-    trace0 = go.Scatter(
-                        x=datax1,
-                        y=datay1,
-                        mode = 'lines+markers',
-    )
-    
-    layout = dict(title = 'Datos de método Runge-Kutta',
-                xaxis = dict(title = 'X (Minutos) '),
-                yaxis = dict(title = 'Y (Grados Centigrados)',
-                             autorange=True),
-                )
-    data = [trace0]
-    #la figura es un array de data(traces) y el layout (que tambien es un array)
-    fig = dict(data=data, layout=layout)
-    plotly.offline.plot(fig, auto_open=True)
-    return
-'''
-
 #----------------------------------------------------------
 # FUNCION print_data(datos)
 #
@@ -252,8 +217,6 @@ def print_data(data):
    
 
     return
-
-
 
 #----------------------------------------------------------
 # FUNCION PrintTabLatex()
@@ -307,44 +270,13 @@ def PrintTabLatex(aTitulos,aDatos):
 	print("\end{table}")
 	return
 
-def GraficarError(data1,data2):
-    datax1 = []
-    datay1 = []
-    datax2 = []
-    datay2 = []
-    kelvin_conversion=273
-    minutes_conversion=60
-
-    for i in range(len(data1)):
-      datax1.append(data1[i]['X']/minutes_conversion)
-      datay1.append(data1[i]['E'])
-
-    for i in range(len(data2)):
-      datax2.append(data2[i]['X']/minutes_conversion)
-      datay2.append(data2[i]['E'])
-
-    trace0 = go.Scatter(
-                        x=datax1,
-                        y=datay1,
-                        name = 'Error relativo porcentual RK',
-                        mode = 'lines+markers',
-    )
-    trace1 = go.Scatter(
-                        x=datax2,
-                        y=datay2,
-                        name = 'Error relativo porcentual Euler',
-                        mode = 'lines+markers',
-    )
-    layout = dict(title = 'Gráfica comparación del Error porcentual',
-                xaxis = dict(title = 'X (Minutos) '),
-                yaxis = dict(title = 'Y (Error %)',
-                             autorange=True),
-                )
-    data = [trace0,trace1]
-    fig = dict(data=data, layout=layout)
-    plotly.offline.plot(fig, auto_open=True)
-    return
-
+#----------------------------------------------------------
+# FUNCION paramSal(datos)
+#
+# PARAMETROS
+# datos:  Lista de diccionarios con los datos de la función rungeKutta()
+# USO  	  Imprime los datos de soaking y tiempos de soaking
+#-----------------------------------------------------------
 def paramSal(datos):
 
     Tfin = datos[-1]['Y']
@@ -353,7 +285,6 @@ def paramSal(datos):
     Tsk  = 0
     Sk   = 0
     nInc = 1
-
 
     #recorro T(t) de forma decreciente
     for i in range(len(datos)-1,0,-1):
@@ -372,8 +303,8 @@ def paramSal(datos):
             Sk = tfin-tini
     Tsk = sumT/nInc
 
-    print("Tsk(K°):  "+ str(Tsk) +" K")
-    print("Tsk(C°):  "+ str(Tsk-273.15)+" C°")
+    print("Tsk(K):  "+ str(Tsk) +" K")
+    print("Tsk(C):  "+ str(Tsk-273.15)+" C")
     print("Sk(seg):  "+ str(Sk) +" seg")
     print("Sk(min):  "+ str(Sk/60) +" min")
 
