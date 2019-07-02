@@ -82,11 +82,11 @@ def main():
 # FUNCION rungeKutta(f,g,h,x0,xf,y0,data,i)
 #
 # PARAMETROS
-# f:       Datos generados de la funcion rungeKutta()
-# g:       Datos generados de la funcion euler()
+# f:       Funcion de EDO
+# g:       Funcion solucion analitica (Calculo de error)
 # h:       Incremento o cadencia
-# x0 y y0: Valores iniciales para RK
-# xf :     Valor final para RK
+# x0 y y0: Valores iniciales
+# xf :     Valor final
 # data :   Array de diccionarios que contiene los datos X e Y de cada iteracion
 # i :      Contador de iteraciones 
 # USO      Calcula los valores con el metodo de Runge-Kutta
