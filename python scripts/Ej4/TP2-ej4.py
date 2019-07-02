@@ -73,23 +73,23 @@ def main():
     i=0
 
     
-    x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
+    #x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
     #print_data(data_rk)
     #GraficarSoaking(data_rk)
-    # paramSoaking(data_rk)
+    # paramSal(data_rk)
 
     Sk_obj = 10 #minutos
     T_Sk_obj = 602 #C
     print('Sk Objetivo [seg] : '+str(Sk_obj))
     print('Tsk Objetivo [C] = ' +str(T_Sk_obj))
 
-    T1 = 1003 # temperatura T1 del material
-    T2 = 922.5 # temperatura T2 del material
-    SoakingTime10(T1,T2,Sk_obj,T_Sk_obj)
+    Temp1 = 1003 # temperatura T1 del material
+    Temp2 = 922.5 # temperatura T2 del material
+    soakingVal(Temp1,Temp2,Sk_obj,T_Sk_obj)
     return
 
 
-def SoakingTime10(T_1,T_2,Sk_obj,T_Sk_obj):
+def soakingVal(T_1,T_2,Sk_obj,T_Sk_obj):
     #T1      = 983.15 # temperatura T1 del material
     #T2      = 983.15 # temperatura T2 del material
     global T1
@@ -106,10 +106,10 @@ def SoakingTime10(T_1,T_2,Sk_obj,T_Sk_obj):
     dictSoak = {"Tsk":0,"Sk":0}
 
     x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
-    dictSoak = paramSoaking(data_rk)
+    dictSoak = paramSal(data_rk)
     print('tiempo Sk: {0:.3f} [min] tiempo obj: {1:.3f} [min] temp mean: {2:.3f} [C] temp obj: {3:.2f} [C]'.format(
         dictSoak['Sk']/minutes_conversion,Sk_obj,dictSoak['Tsk']-kelvin_conversion,T_Sk_obj)) 
-    return
+    return dictSoak
 
 
 
@@ -280,13 +280,13 @@ def print_data(data):
     return
 
 #----------------------------------------------------------
-# FUNCION paramSoaking(datos)
+# FUNCION paramSal(datos)
 #
 # PARAMETROS
 # datos:  Lista de diccionarios con los datos de la función rungeKutta()
 # USO  	  Imprime los datos de soaking y tiempos de soaking
 #-----------------------------------------------------------
-def paramSoaking(datos):
+def paramSal(datos):
 
     debug = 0
     kelvin_conversion = 273
