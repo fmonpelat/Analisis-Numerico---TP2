@@ -18,7 +18,6 @@ plotly.tools.set_credentials_file(username='fmonpelat', api_key='YpD7z4O34340q0G
 import plotly.graph_objs as go
 # debug
 from pprint import pprint
-import SolPuntoFijo
 
 
 T0      = 293.15 # temperatura inicial 
@@ -39,7 +38,7 @@ v_0     = L / (n_bol * cad) #m/s
 S       = math.pi*OD*Lt # Superficie del material
 m       = rho*math.pi*OD*WT*(1-WT/OD)*Lt # Masa del material
 
-print('Datos calculados: ')
+print('\nDatos calculados: \n')
 print('m [kg] = ' +str(m))
 print('S [m2] = ' +str(S))
 print('Cadencia [seg] : '+str(cad))
@@ -61,37 +60,7 @@ def f(t,T):
 def analiticS(t):
     return (T0-T1)*math.exp(-((Hc*S)/(m*C))*t)+T1
 
-
-def main():
-    #para probar buscamos runge kutta de orden 4 para la funcion f
-    data_rk=[]
-    data_an=[]
-    
-    global cad
-    x0 = 0. #tiempo inicial
-    xf = n_bol * cad #tiempo final
-    h = cad
-    cad = cad*0.95
-    i=0
-
-    
-    #x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
-    #print_data(data_rk)
-    #GraficarSoaking(data_rk)
-    # paramSal(data_rk)
-
-    Sk_obj = 10 #minutos
-    T_Sk_obj = 602 #C
-    print('Sk Objetivo [seg] : '+str(Sk_obj))
-    print('Tsk Objetivo [C] = ' +str(T_Sk_obj))
-
-    Temp1 = 1003 # temperatura T1 del material
-    Temp2 = 922.5 # temperatura T2 del material
-    soakingVal(Temp1,Temp2,Sk_obj,T_Sk_obj)
-    return
-
-
-def soakingVal(T_1,T_2,Sk_obj,T_Sk_obj):
+def skParam(T_1,T_2,T_Sk_obj,Sk_obj):
     #T1      = 983.15 # temperatura T1 del material
     #T2      = 983.15 # temperatura T2 del material
     global T1
@@ -109,9 +78,11 @@ def soakingVal(T_1,T_2,Sk_obj,T_Sk_obj):
 
     x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
     dictSoak = paramSal(data_rk)
-    print('tiempo Sk: {0:.3f} [min] tiempo obj: {1:.3f} [min] temp mean: {2:.3f} [C] temp obj: {3:.2f} [C]'.format(
-        dictSoak['Sk']/minutes_conversion,Sk_obj,dictSoak['Tsk']-kelvin_conversion,T_Sk_obj)) 
+    #Impresiones para pruebas
+    #print('tiempo Sk: {0:.3f} [min] tiempo obj: {1:.3f} [min] temp mean: {2:.3f} [C] temp obj: {3:.2f} [C]'.format(
+    #    dictSoak['Sk']/minutes_conversion,Sk_obj,dictSoak['Tsk']-kelvin_conversion,T_Sk_obj)) 
     return dictSoak
+
 
 
 
@@ -269,7 +240,7 @@ def GraficarSoaking(data):
 #
 # PARAMETROS
 # printdata: Lista de diccionarios con los valores X, Y i y el error de cada iteracion.
-# USO  		Imprime los valores en CSV para facil lectura desde la terminal.
+# USO       Imprime los valores en CSV para facil lectura desde la terminal.
 #-----------------------------------------------------------
 def print_data(data):
     kelvin_conversion=273
@@ -286,7 +257,7 @@ def print_data(data):
 #
 # PARAMETROS
 # datos:  Lista de diccionarios con los datos de la función rungeKutta()
-# USO  	  Imprime los datos de soaking y tiempos de soaking
+# USO     Imprime los datos de soaking y tiempos de soaking
 #-----------------------------------------------------------
 def paramSal(datos):
 
@@ -325,6 +296,171 @@ def paramSal(datos):
     #print("Sk(min):  "+ str(Sk/minutes_conversion) +" min")
 
     return {"Tsk":Tsk,"Sk":Sk}
+
+#---------------------------------------------------------------------------------------------------------------
+# FUNCION
+# SolPuntoFijo(F,J,nErr,Tsk0,Ssk0)
+#
+# PARAMETROS
+# _F_     Diccionario de 2 elementos: F={"f1":f1,"f2":f2}
+# _J_     Matriz de 2x2 Jacobiana inversa 
+# _nErr_  Tolerancia entre una iteración y la siguiente
+# _Tsk0_  Semilla de temperatura de soaking
+# _Ssk0_  Semilla de tiempo de soaking
+#
+# RESULTADO
+#_{"T1":T1 , "T2": T2,"nIter":nIter}_ Diccionario con los dos valores de las raíces y la cantidad de iteraciones
+# Observaciones: El método deja prefijados aquellos valores que se conservan
+#                en los casos A, B y C
+#
+#---------------------------------------------------------------------------------------------------------------
+
+def SolPuntoFijo(T1_0,T2_0,Tsk0,Sk0=600,J=[[-0.5,1.5],[1.5,-0.5]],nErr=0.5):
+
+    nIter=1
+    #Semillas
+    T1Previo=Tsk0
+    T2Previo=Sk0
+
+    aPar = skParam(T1_0,T2_0,Tsk0,Sk0)
+    F = {"f1":aPar["Tsk"]-Tsk0, "f2":aPar["Sk"]-Sk0}
+
+    #Primera iteracion
+
+    T1 = Tsk0-J[0][0]*F["f1"]-J[0][1]*F["f2"]
+    T2 = Sk0-J[1][0]*F["f1"]-J[1][1]*F["f2"]
+
+
+    while (T1 - T1Previo) > nErr and (T2 - T2Previo) > nErr :
+
+        T1Previo=T1
+        T2Previo=T2
+
+        aPar = skParam(T1Previo,T2Previo,Tsk0,Sk0)
+        F = {"f1":aPar["Tsk"]-Tsk0, "f2":aPar["Sk"]-Sk0}
+
+        #Iteración de punto fijo
+        #La multiplicacion de Matriz*Vector fue armada de forma analítica
+        T1 = T1Previo-J[0][0]*F["f1"]-J[0][1]*F["f2"]
+        T2 = T2Previo-J[1][0]*F["f1"]-J[1][1]*F["f2"]
+
+
+        nIter = nIter+1
+
+    return {"T1":T1 , "T2": T2 ,"nIter":nIter}
+
+    
+    #----------------------------------------------------------
+# FUNCION PrintTabLatex()
+#
+# PARAMETROS
+# aTitulos: Lista con los títulos a imprimir
+# aDatos:   Lista de listas con los datos correspondientes 
+#           a cada titulo
+# USO       Imprime una tabla en formato latex para facilidad 
+#           del pasaje de datos al informe
+#-----------------------------------------------------------
+
+
+def PrintTabLatex(aTitulos,aDatos):
+
+    cCPypeC = "|c|"
+    aTab    = [] 
+    cLin    = ""
+    cTit    = ""
+    cIni    = "\hline "
+    cFin    = " \\\\"
+
+    for nj in range(len(aTitulos)):
+        if nj < len(aTitulos)-1:
+            cTit = cTit + aTitulos[nj]+ " & "
+        if nj == len(aTitulos)-1:
+            cTit = cTit + aTitulos[nj]
+
+    cTit = cIni + cTit + cFin
+    for ni in range(len(aDatos)):
+        cCPypeC=cCPypeC+"c|"
+        cLin = ""
+        for nj in range(len(aDatos[ni])):
+            if nj < len(aDatos[ni])-1:
+                cLin = cLin + aDatos[ni][nj]+ " & "
+            if nj == len(aDatos[ni])-1:
+                cLin = cLin + aDatos[ni][nj]
+
+        cLin = cIni + cLin + cFin 
+        aTab.append(cLin)
+
+
+    print("\\begin{table}[H]")
+    print("     \makegapedcells")
+    print("     \centering")
+    print("\\resizebox{0.7\\textwidth}{!}{")
+    print("         \\begin{tabular}{"+cCPypeC+"}")
+    print(cTit)
+    for ni in range(len(aTab)):
+        print(aTab[ni])
+    print("         \hline")
+    print("     \end{tabular}}")
+    print("\end{table}")
+    return 
+
+
+
+def main():
+    #para probar buscamos runge kutta de orden 4 para la funcion f
+    data_rk=[]
+    data_an=[]
+    aInvJ = [[-0.5,1.5],[1.5,-0.5]]
+    
+    global cad
+    x0 = 0. #tiempo inicial
+    xf = n_bol * cad #tiempo final
+    h = cad
+    cad = cad*0.95
+    i=0
+    aTit = ["Caso A (C°)","Caso B (C°)","Caso C (C°)"]
+    aDat = []
+
+    #print('Sk Objetivo [seg] : '+str(Sk_obj)+' K°')
+    #print('Tsk Objetivo [K] = ' +str(T_Sk_obj)+' K°\n')
+
+    print('\n\n\tCASO A ---> Sk: 10 min, Tsk: 602 C°\n')
+
+    T1_0 = 1003 # temperatura T1 del material
+    T2_0 = 922.5 # temperatura T2 del material
+
+    aSol = SolPuntoFijo(T1_0,T2_0,875.5)
+
+    aDat.append(["T_{1}: "+str(round(aSol["T1"]+273.5,3)),"T_{2}: "+str(round(aSol["T2"]+273.5,3))])
+
+    print('T1 '+str(aSol["T1"])+'K°\t\t'+str(aSol["T1"]+273.5)+'C°')
+    print('T2 '+str(aSol["T2"])+'K°\t\t'+str(aSol["T2"]+273.5)+'C°\n')
+
+    print('\n\tCASO B ---> Sk: 10 min, Tsk: 624,90°\n')
+
+    aSol = SolPuntoFijo(T1_0,T2_0,898.05)
+
+    aDat.append(["T_{1}: "+str(round(aSol["T1"]+273.5,3)),"T_{2}: "+str(round(aSol["T2"]+273.5,3))])
+
+    print('T1 '+str(aSol["T1"])+'K°\t\t'+str(aSol["T1"]+273.5)+'C°')
+    print('T2 '+str(aSol["T2"])+'K°\t\t'+str(aSol["T2"]+273.5)+'C°\n')
+
+    print('\n\tCASO C ---> Sk: 10 min, Tsk: 674,90 C°\n')
+    T1_0 = 1003 # temperatura T1 del material
+    T2_0 = 922.5 # temperatura T2 del material
+
+    aSol = SolPuntoFijo(T1_0,T2_0,948.05)
+
+    aDat.append(["T_{1}: "+str(round(aSol["T1"]+273.5,3)),"T_{2}: "+str(round(aSol["T2"]+273.5,3))])
+
+    print('T1 '+str(aSol["T1"])+'K°\t\t'+str(aSol["T1"]+273.5)+'C°')
+    print('T2 '+str(aSol["T2"])+'K°\t\t'+str(aSol["T2"]+273.5)+'C°\n')
+
+    aDat = np.transpose(aDat)
+
+    #PrintTabLatex(aTit,aDat)
+
+    return
 
 
 if(__name__ == "__main__"):
