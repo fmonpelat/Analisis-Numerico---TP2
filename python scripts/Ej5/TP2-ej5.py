@@ -8,7 +8,7 @@ Ejercicio 3
 
 import numpy as np #Manejo de arrays
 import sys
-sys.setrecursionlimit(10000000)
+sys.setrecursionlimit(1000)
 import math 
 # para graficar
 import plotly
@@ -16,7 +16,6 @@ import plotly.plotly as py
 plotly.tools.set_credentials_file(username='fmonpelat', api_key='YpD7z4O34340q0GZGbC7')
 #plotly.tools.set_credentials_file(username='fmonpelat', api_key='xxxxxx')
 import plotly.graph_objs as go
-# debug
 from pprint import pprint
 
 
@@ -34,6 +33,7 @@ eps     = 0.85 #
 L       = 50 #m
 n_bol   = 50 #unidades o pasos
 cad     = (np.round(-10 / 10000 * (97490-90000) + 35, 0))
+cad     = 28
 v_0     = L / (n_bol * cad) #m/s
 S       = math.pi*OD*Lt # Superficie del material
 m       = rho*math.pi*OD*WT*(1-WT/OD)*Lt # Masa del material
@@ -55,12 +55,12 @@ def T_inf(x):
 
 def f(t,T):
     x = t * v_0 #aproximacion continua, se mueve de a pasitos en realidad
-    return (-1 / (m*C) * ( Hc * S * (T - T_inf(x)) + sigma * eps * S * (T**4 - T_inf(x)**4) ) )
+    return (-1 / (m*C) * ( Hc * S * (T - T_inf(x)) + sigma * eps * S * (np.power(T,4) - np.power(T_inf(T),4)) ) )
 
 def analiticS(t):
     return (T0-T1)*math.exp(-((Hc*S)/(m*C))*t)+T1
 
-def skParam(T_1,T_2,T_Sk_obj,Sk_obj):
+def skParam(T_1,T_2):
     #T1      = 983.15 # temperatura T1 del material
     #T2      = 983.15 # temperatura T2 del material
     global T1
@@ -140,7 +140,7 @@ def rungeKutta(f,g,h,x0,xf,y0,data,i):
 # data:  Datos generados de la funcion rungeKutta()
 # USO    Imprime con Plotly un gráfico con 2 datos
 #-----------------------------------------------------------
-def GraficarSoaking(data):
+def GraficarSoaking(data,graph_title):
     # data1,data2 son arrays de diccionarios
     datax1 = []
     datay1 = []
@@ -224,7 +224,7 @@ def GraficarSoaking(data):
                                 },
                             },
                 ],
-                title = 'Gráfica',
+                title = graph_title,
                 xaxis = dict(title = 'X (Minutos) '),
                 yaxis = dict(title = 'Y (Grados Centigrados)',
                              autorange=True),
@@ -295,7 +295,7 @@ def paramSal(datos):
     #print("Sk(seg):  "+ str(Sk) +" seg")
     #print("Sk(min):  "+ str(Sk/minutes_conversion) +" min")
 
-    return {"Tsk":Tsk,"Sk":Sk}
+    return {"Tsk":Tsk-273.5,"Sk":Sk/60}
 
 #---------------------------------------------------------------------------------------------------------------
 # FUNCION
@@ -315,42 +315,46 @@ def paramSal(datos):
 #
 #---------------------------------------------------------------------------------------------------------------
 
-def SolPuntoFijo(T1_0,T2_0,Tsk0,Sk0=600,J=[[-0.5,1.5],[1.5,-0.5]],nErr=0.5):
+def SolPuntoFijo(T1_0,T2_0,Tsk0,Sk0=10,J=[[-0.5,1.5],[1.5,-0.5]],nErr=5):
 
     nIter=1
     #Semillas
     T1Previo=Tsk0
     T2Previo=Sk0
 
-    aPar = skParam(T1_0,T2_0,Tsk0,Sk0)
+    aPar = skParam(T1_0,T2_0)
     F = {"f1":aPar["Tsk"]-Tsk0, "f2":aPar["Sk"]-Sk0}
 
     #Primera iteracion
 
-    T1 = Tsk0-J[0][0]*F["f1"]-J[0][1]*F["f2"]
+    T1 = Tsk0-(J[0][0])*F["f1"]-(J[0][1])*F["f2"]
     T2 = Sk0-J[1][0]*F["f1"]-J[1][1]*F["f2"]
 
 
-    while (T1 - T1Previo) > nErr and (T2 - T2Previo) > nErr :
+    while abs(T1 - T1Previo) > nErr and abs(T2 - T2Previo) > nErr :
+    #while abs(T2 - T2Previo) > nErr :
 
         T1Previo=T1
         T2Previo=T2
-
-        aPar = skParam(T1Previo,T2Previo,Tsk0,Sk0)
+        
+        # T1Previo y T2Previo estan en celcius pero skParam recibe en kelvin
+        aPar = skParam(T1Previo+273.15,T2Previo+273.15)
         F = {"f1":aPar["Tsk"]-Tsk0, "f2":aPar["Sk"]-Sk0}
 
         #Iteración de punto fijo
         #La multiplicacion de Matriz*Vector fue armada de forma analítica
-        T1 = T1Previo-J[0][0]*F["f1"]-J[0][1]*F["f2"]
+        T1 = T1Previo-(J[0][0])*F["f1"]-(J[0][1])*F["f2"]
         T2 = T2Previo-J[1][0]*F["f1"]-J[1][1]*F["f2"]
 
-
         nIter = nIter+1
+        if nIter == 5000:
+            print("No hubo convergencia")
+            break
 
     return {"T1":T1 , "T2": T2 ,"nIter":nIter}
 
     
-    #----------------------------------------------------------
+#----------------------------------------------------------
 # FUNCION PrintTabLatex()
 #
 # PARAMETROS
@@ -404,7 +408,20 @@ def PrintTabLatex(aTitulos,aDatos):
     print("\end{table}")
     return 
 
+def Graficar_horno(T_1,T_2,graph_title):
+    global T1
+    T1=T_1
+    global T2
+    T2 = T_2
+    x0 = 0. #tiempo inicial
+    xf = n_bol * cad #tiempo final
+    h = cad
+    i = 0
+    data_rk = []
 
+    x, y = rungeKutta(f,analiticS,h,x0,xf,T0,data_rk,i)
+    GraficarSoaking(data_rk,graph_title)
+    return
 
 def main():
     #para probar buscamos runge kutta de orden 4 para la funcion f
@@ -412,53 +429,55 @@ def main():
     data_an=[]
     aInvJ = [[-0.5,1.5],[1.5,-0.5]]
     
-    global cad
     x0 = 0. #tiempo inicial
     xf = n_bol * cad #tiempo final
     h = cad
-    cad = cad*0.95
     i=0
-    aTit = ["Caso A (C°)","Caso B (C°)","Caso C (C°)"]
+    T1_0 = 1003 # temperatura T1 del material
+    T2_0 = 922.5#922.5 # temperatura T2 del material
+
+    aTit = ["Caso","Sk","Tsk","T1","T2","Número"]
     aDat = []
 
     #print('Sk Objetivo [seg] : '+str(Sk_obj)+' K°')
     #print('Tsk Objetivo [K] = ' +str(T_Sk_obj)+' K°\n')
 
-    print('\n\n\tCASO A ---> Sk: 10 min, Tsk: 602 C°\n')
+    Tsk_a=602
+    print('\n\n\tCASO A ---> Sk: 10 min, Tsk: {0:} C°\n'.format(Tsk_a))
+    aSol = SolPuntoFijo(T1_0,T2_0,Tsk_a)
+    aDat.append(
+        ["A","10",str(Tsk_a),str(round(aSol["T1"],3)),str(round(aSol["T2"],3)),str(aSol["nIter"])]
+        )
+    Graficar_horno(aSol["T1"],aSol["T2"],"Caso A")
+    print('T1 '+str(aSol["T1"])+'C°')
+    print('T2 '+str(aSol["T2"])+'C°\n')
+    print(str(aSol["nIter"]))
 
-    T1_0 = 1003 # temperatura T1 del material
-    T2_0 = 922.5 # temperatura T2 del material
+    Tsk_b=624.90
+    print('\n\tCASO B ---> Sk: 10 min, Tsk: {0:}°\n'.format(Tsk_b))
+    aSol = SolPuntoFijo(T1_0,T2_0,Tsk_b)
+    aDat.append(
+        ["B","10",str(Tsk_b),str(round(aSol["T1"],3)),str(round(aSol["T2"],3)),str(aSol["nIter"])]
+        )
+    Graficar_horno(aSol["T1"],aSol["T2"],"Caso B")
+    print('T1 '+str(aSol["T1"])+'C°')
+    print('T2 '+str(aSol["T2"])+'C°\n')
+    print(str(aSol["nIter"]))
 
-    aSol = SolPuntoFijo(T1_0,T2_0,875.5)
+    Tsk_c=674.90
+    print('\n\tCASO C ---> Sk: 10 min, Tsk: {0:} C°\n'.format(Tsk_c))
+    aSol = SolPuntoFijo(T1_0,T2_0,Tsk_c)
+    aDat.append(
+        ["C","10",str(Tsk_c),str(round(aSol["T1"],3)),str(round(aSol["T2"],3)),str(aSol["nIter"])]
+        )
+    print('T1 '+str(aSol["T1"])+'C°')
+    print('T2 '+str(aSol["T2"])+'C°\n')
+    Graficar_horno(aSol["T1"],aSol["T2"],"Caso C")
+    print(str(aSol["nIter"]))
 
-    aDat.append(["T_{1}: "+str(round(aSol["T1"]+273.5,3)),"T_{2}: "+str(round(aSol["T2"]+273.5,3))])
+    #aDat = np.transpose(aDat)
 
-    print('T1 '+str(aSol["T1"])+'K°\t\t'+str(aSol["T1"]+273.5)+'C°')
-    print('T2 '+str(aSol["T2"])+'K°\t\t'+str(aSol["T2"]+273.5)+'C°\n')
-
-    print('\n\tCASO B ---> Sk: 10 min, Tsk: 624,90°\n')
-
-    aSol = SolPuntoFijo(T1_0,T2_0,898.05)
-
-    aDat.append(["T_{1}: "+str(round(aSol["T1"]+273.5,3)),"T_{2}: "+str(round(aSol["T2"]+273.5,3))])
-
-    print('T1 '+str(aSol["T1"])+'K°\t\t'+str(aSol["T1"]+273.5)+'C°')
-    print('T2 '+str(aSol["T2"])+'K°\t\t'+str(aSol["T2"]+273.5)+'C°\n')
-
-    print('\n\tCASO C ---> Sk: 10 min, Tsk: 674,90 C°\n')
-    T1_0 = 1003 # temperatura T1 del material
-    T2_0 = 922.5 # temperatura T2 del material
-
-    aSol = SolPuntoFijo(T1_0,T2_0,948.05)
-
-    aDat.append(["T_{1}: "+str(round(aSol["T1"]+273.5,3)),"T_{2}: "+str(round(aSol["T2"]+273.5,3))])
-
-    print('T1 '+str(aSol["T1"])+'K°\t\t'+str(aSol["T1"]+273.5)+'C°')
-    print('T2 '+str(aSol["T2"])+'K°\t\t'+str(aSol["T2"]+273.5)+'C°\n')
-
-    aDat = np.transpose(aDat)
-
-    #PrintTabLatex(aTit,aDat)
+    PrintTabLatex(aTit,aDat)
 
     return
 
